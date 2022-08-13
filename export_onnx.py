@@ -1,20 +1,24 @@
 import argparse
+import numpy as np
+import cv2
 import torch
-
 import onnx
-
-from yolort.models import YOLOv5
-
+from yolort.models import YOLO, YOLOv5
 from yolort.utils import get_image_from_url, read_image_to_tensor
 from yolort.utils.image_utils import to_numpy
 from yolort.runtime.ort_helper import export_onnx
 from yolort.runtime import PredictorORT
 
 
-import numpy as np
-
 def get_image_tensor_from_url(url, device):
     image = get_image_from_url(url)
+    image = read_image_to_tensor(image, is_half=False)
+    image = image.to(device)
+    return image
+
+
+def get_image_tensor_from_filename(filename, device):
+    image = cv2.imread(filename)
     image = read_image_to_tensor(image, is_half=False)
     image = image.to(device)
     return image
@@ -29,19 +33,26 @@ def main(input_weights, output_weights):
     score_thresh = 0.35
     nms_thresh = 0.45
     opset_version = 11
-    batch_size = 1
+    batch_size = 10
+    enable_dynamic_batch_size = False
 
+    filename = "test.jpg"
+    images = torch.stack([get_image_tensor_from_filename(filename, device)] * batch_size)
 
-    image_url = "https://lila.science/wp-content/uploads/2018/10/CaltechCameraTraps_web.jpg"
-    images = torch.stack([get_image_tensor_from_url(image_url, device)] * batch_size)
-
-    model = YOLOv5.load_from_yolov5(
-        input_weights,
-        size=size,
-        size_divisible=size_divisible,
-        score_thresh=score_thresh,
-        nms_thresh=nms_thresh,
-    )
+    if not enable_dynamic_batch_size:
+        model = YOLOv5.load_from_yolov5(
+            input_weights,
+            size=size,
+            size_divisible=size_divisible,
+            score_thresh=score_thresh,
+            nms_thresh=nms_thresh,
+        )
+    else:
+        model = YOLO.load_from_yolov5(
+            input_weights,
+            score_thresh=score_thresh,
+            nms_thresh=nms_thresh,
+        )
 
     model = model.eval()
     model = model.to(device)
@@ -71,7 +82,7 @@ def main(input_weights, output_weights):
     for i in range(0, len(outputs)):
         torch.testing.assert_close(outputs[i], ort_outs1[i], rtol=1e-04, atol=1e-07)
 
-    print("Exported model has been tested with ONNXRuntime, and the result looks good!")
+    print("Exported model has been tested, and the result looks good!")
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
