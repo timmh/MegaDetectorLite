@@ -24,16 +24,14 @@ def get_image_tensor_from_filename(filename, device):
     return image
 
 
-def main(input_weights, output_weights):
+def main(input_weights, output_weights, score_thresh, nms_thresh):
 
     device = torch.device("cpu")
 
     size = (640, 640)  # Used for pre-processing
     size_divisible = 64
-    score_thresh = 0.35
-    nms_thresh = 0.45
     opset_version = 11
-    batch_size = 10
+    batch_size = 1
     enable_dynamic_batch_size = False
 
     filename = "test.jpg"
@@ -66,7 +64,7 @@ def main(input_weights, output_weights):
     outputs = list(map(to_numpy, outputs))
 
     # Export the ONNX model
-    export_onnx(model=model, onnx_path=output_weights, opset_version=opset_version, batch_size=batch_size, skip_preprocess=True)
+    export_onnx(model=model, onnx_path=output_weights, opset_version=opset_version, batch_size=batch_size, skip_preprocess=True, score_thresh=score_thresh, nms_thresh=nms_thresh)
 
     # Load the ONNX model
     onnx_model = onnx.load(output_weights)
@@ -88,5 +86,7 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("input_weights", type=str, help="path to the YOLOv5 weights")
     argparser.add_argument("output_weights", type=str, help="path to the output weights")
+    argparser.add_argument("--score_thresh", type=float, default=0.05, help="score threshold")
+    argparser.add_argument("--nms_thresh", type=float, default=0.45, help="non-maximum-suppression threshold")
     args = argparser.parse_args()
-    main(args.input_weights, args.output_weights)
+    main(args.input_weights, args.output_weights, args.score_thresh, args.nms_thresh)

@@ -52,7 +52,7 @@ if __name__ == "__main__":
     argparser.add_argument("--width", type=int, default=1280, help="image width which the exported model should support")
     argparser.add_argument("--height", type=int, default=1280, help="image height which the exported model should support")
     argparser.add_argument("--score_thresh", type=float, default=0.05, help="score threshold")
-    argparser.add_argument("--nms_thresh", type=float, default=0.05, help="non-maximum-suppression threshold")
+    argparser.add_argument("--nms_thresh", type=float, default=0.45, help="non-maximum-suppression threshold")
     argparser.add_argument("--detections_per_img", type=int, default=100, help="maximum number of detections per image")
     argparser.add_argument("--precision", type=str, default="fp16", help="precision of the exported model weights")
     args = argparser.parse_args()
